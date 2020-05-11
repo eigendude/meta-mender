@@ -246,6 +246,9 @@ python() {
         # Include components for generating an SD image.
         'mender-image-sd',
 
+        # Alias of mender-image-sd using '.img' suffix instead of '.sdimg'
+        'mender-image-img',
+
         # Include components for generating a UBI image.
         'mender-image-ubi',
 

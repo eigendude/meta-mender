@@ -227,6 +227,9 @@ EOF
     fi
 }
 
+IMAGE_CMD_img() {
+    mender_part_image img msdos
+}
 IMAGE_CMD_sdimg() {
     mender_part_image sdimg msdos
 }
@@ -241,6 +244,7 @@ IMAGE_CMD_gptimg() {
 }
 
 
+addtask do_rootfs_wicenv after do_image before do_image_img
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 addtask do_rootfs_wicenv after do_image before do_image_uefiimg
 addtask do_rootfs_wicenv after do_image before do_image_biosimg
@@ -270,6 +274,9 @@ _MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub = " grub-efi:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
 
+do_image_img[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+do_image_img[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
+
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
 
@@ -280,6 +287,7 @@ do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
+IMAGE_TYPEDEP_img_append   = " ${ARTIFACTIMG_FSTYPE} dataimg"
 IMAGE_TYPEDEP_sdimg_append   = " ${ARTIFACTIMG_FSTYPE} dataimg"
 IMAGE_TYPEDEP_uefiimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg"
 IMAGE_TYPEDEP_biosimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg"
@@ -288,6 +296,9 @@ IMAGE_TYPEDEP_gptimg_append  = " ${ARTIFACTIMG_FSTYPE} dataimg"
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
+#
+# TODO: Detect 'img' fstype
+#
 IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
 # And same here.
 IMAGE_TYPEDEP_biosimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
@@ -305,6 +316,8 @@ IMAGE_TYPEDEP_hddimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' 
 python() {
     if bb.utils.contains('IMAGE_FSTYPES', 'sdimg', True, False, d):
         type='sdimg'
+    elif bb.utils.contains('IMAGE_FSTYPES', 'img', True, False, d):
+        type='img'
     elif bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', True, False, d):
         type='uefiimg'
     elif bb.utils.contains('IMAGE_FSTYPES', 'biosimg', True, False, d):
@@ -324,6 +337,7 @@ python() {
 }
 
 # So that we can use the files from excluded paths in the full images.
+do_image_img[respect_exclude_path] = "0"
 do_image_sdimg[respect_exclude_path] = "0"
 do_image_uefiimg[respect_exclude_path] = "0"
 do_image_biosimg[respect_exclude_path] = "0"

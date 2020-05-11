@@ -83,6 +83,8 @@ case "$MACHINE" in
         BOOTLOADER_ARG="${BOOTLOADER_ARG:--kernel ${BOOTLOADER}}"
         if echo "$DISTRO_FEATURES" | grep -q mender-grub; then
             DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.uefiimg"}
+        elif echo "$DISTRO_FEATURES" | grep -q mender-image-img; then
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.img"}
         else
             DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.sdimg"}
         fi

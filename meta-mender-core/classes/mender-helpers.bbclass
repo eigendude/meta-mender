@@ -210,7 +210,7 @@ mender_get_clean_kernel_devicetree() {
 
 
 def mender_is_msdos_ptable_image(d):
-    mptimgs = 'mender-image-sd mender-image-bios'
+    mptimgs = 'mender-image-img mender-image-sd mender-image-bios'
     return bb.utils.contains_any('DISTRO_FEATURES', mptimgs , True, False, d)
 
 

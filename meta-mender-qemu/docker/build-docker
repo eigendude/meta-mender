@@ -77,6 +77,8 @@ if [ $BUILD_DEFAULTS = 1 ]; then
 
     if egrep -q '\bmender-image-uefi\b' <<<"$DISTRO_FEATURES"; then
         DISK_IMG="$IMAGE_LINK_NAME.uefiimg"
+    elif egrep -q '\bmender-image-img\b' <<<"$DISTRO_FEATURES"; then
+        DISK_IMG="$IMAGE_LINK_NAME.img"
     elif egrep -q '\bmender-image-sd\b' <<<"$DISTRO_FEATURES"; then
         DISK_IMG="$IMAGE_LINK_NAME.sdimg"
     else
