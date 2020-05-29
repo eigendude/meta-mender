@@ -1,0 +1,13 @@
+[Unit]
+Description=Update U-Boot config for eMMC installation
+Wants=mender-systemd-growfs-data.service
+After=mender-systemd-growfs-data.service
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/mender-update-uboot
+
+[Install]
+WantedBy=multi-user.target

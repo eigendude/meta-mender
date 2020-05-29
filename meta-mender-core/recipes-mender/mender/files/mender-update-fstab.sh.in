@@ -1,0 +1,29 @@
+#!/bin/sh
+
+source mender-utils
+
+MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
+MENDER_INSTALL_DEVICE=@MENDER_INSTALL_DEVICE@
+
+FSTAB_FILE="/etc/fstab"
+
+if [ -n "${MENDER_INSTALL_DEVICE}" ]; then
+    ROOT_DEVICE=$(read_root_device)
+
+    # Check if we booted from the installation disk
+    if [[ "${ROOT_DEVICE}" == *"${MENDER_INSTALL_DEVICE}"* ]]; then
+        # Check if /etc/fstab still uses the storage disk
+        if grep -q "${MENDER_STORAGE_DEVICE}" "${FSTAB_FILE}"; then
+            # Remount the root filesystem for access to /etc
+            mount -o remount,rw /
+            # Change target partitions to the install disk
+            sed -i "s#${MENDER_STORAGE_DEVICE}#${MENDER_INSTALL_DEVICE}#g" "${FSTAB_FILE}"
+            # Guarantee the change was written to disk
+            sync
+            # Reboot to pick up changes
+            shutdown -r now
+            # Abort dependent systemd services
+            exit 1
+        fi
+    fi
+fi

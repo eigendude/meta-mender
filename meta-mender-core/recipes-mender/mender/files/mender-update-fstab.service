@@ -1,0 +1,22 @@
+[Unit]
+Description=Update /etc/fstab for eMMC installation
+DefaultDependencies=no
+Before=user.slice
+Before=paths.target
+Before=remote-fs.target
+Before=systemd-remount-fs.service
+Before=systemd-fsck-root.service
+Before=mender-grow-data.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/mender-update-fstab
+
+[Install]
+RequiredBy=user.slice
+RequiredBy=paths.target
+RequiredBy=remote-fs.target
+RequiredBy=systemd-remount-fs.service
+RequiredBy=systemd-fsck-root.service
+RequiredBy=mender-grow-data.service
