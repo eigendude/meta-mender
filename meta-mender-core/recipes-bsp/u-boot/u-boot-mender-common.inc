@@ -26,6 +26,7 @@ SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE
                                                     '', \
                                                     d)}"
 
+SRC_URI_append_mender-uboot = " file://0005-Allow-installing-to-embedded-storage.patch"
 
 ################################################################################
 # Generic tasks.
@@ -89,6 +90,17 @@ do_provide_mender_defines() {
         MENDER_UBOOT_STORAGE_DEVICE=`get_uboot_device_from_device ${MENDER_STORAGE_DEVICE}`
     fi
 
+    if [ -n "${MENDER_UBOOT_INSTALL_INTERFACE}" ]; then
+        MENDER_UBOOT_INSTALL_INTERFACE=${MENDER_UBOOT_INSTALL_INTERFACE}
+    else
+        MENDER_UBOOT_INSTALL_INTERFACE=`get_uboot_interface_from_device ${MENDER_INSTALL_DEVICE}`
+    fi
+    if [ -n "${MENDER_UBOOT_INSTALL_DEVICE}" ]; then
+        MENDER_UBOOT_INSTALL_DEVICE=${MENDER_UBOOT_INSTALL_DEVICE}
+    else
+        MENDER_UBOOT_INSTALL_DEVICE=`get_uboot_device_from_device ${MENDER_INSTALL_DEVICE}`
+    fi
+
     if [ -n "${MENDER_KERNEL_IMAGETYPE_FORCE}" ]; then
         MENDER_KERNEL_IMAGETYPE="${MENDER_KERNEL_IMAGETYPE_FORCE}"
     elif [ -n "${KERNEL_IMAGETYPE}" ]; then
@@ -141,11 +153,15 @@ do_provide_mender_defines() {
 #define MENDER_ROOTFS_PART_B_NUMBER_HEX $MENDER_ROOTFS_PART_B_NUMBER_HEX
 #define MENDER_UBOOT_STORAGE_INTERFACE "$MENDER_UBOOT_STORAGE_INTERFACE"
 #define MENDER_UBOOT_STORAGE_DEVICE $MENDER_UBOOT_STORAGE_DEVICE
+#define MENDER_UBOOT_INSTALL_INTERFACE "$MENDER_UBOOT_INSTALL_INTERFACE"
+#define MENDER_UBOOT_INSTALL_DEVICE $MENDER_UBOOT_INSTALL_DEVICE
 #define MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART ${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART}
 
 /* BB variables. */
 #define MENDER_STORAGE_DEVICE "${MENDER_STORAGE_DEVICE}"
 #define MENDER_STORAGE_DEVICE_BASE "${MENDER_STORAGE_DEVICE_BASE}"
+#define MENDER_INSTALL_DEVICE "${MENDER_INSTALL_DEVICE}"
+#define MENDER_INSTALL_DEVICE_BASE "${MENDER_INSTALL_DEVICE_BASE}"
 #define MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 $HEX_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
 #define MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 $HEX_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
 #define MENDER_ROOTFS_PART_A_NAME "${MENDER_ROOTFS_PART_A_NAME}"
