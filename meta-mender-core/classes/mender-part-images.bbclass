@@ -225,6 +225,160 @@ EOF
             ) | fdisk ${outimgname}
         fi
     fi
+
+    # Inspect the created image
+    PARTITION_LIST=$(wic ls "${outimgname}")
+
+    BOOT_PARTITION_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_BOOT_PART_NUMBER} " | awk '{ print $2; }')
+    BOOT_PARTITION_END=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_BOOT_PART_NUMBER} " | awk '{ print $3; }')
+    PARTITION_A_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_A_NUMBER} " | awk '{ print $2; }')
+    PARTITION_A_END=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_A_NUMBER} " | awk '{ print $3; }')
+    PARTITION_B_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_B_NUMBER} " | awk '{ print $2; }')
+    PARTITION_B_END=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_B_NUMBER} " | awk '{ print $3; }')
+    PARTITION_B_SIZE=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_B_NUMBER} " | awk '{ print $4; }')
+    DATA_PARTITION_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_DATA_PART_NUMBER} " | awk '{ print $2; }')
+
+    # Scale down to megabyte
+    BOOT_PARTITION_START_MB=$(expr ${BOOT_PARTITION_START} / 1024 / 1024)
+    PARTITION_A_START_MB=$(expr ${PARTITION_A_START} / 1024 / 1024)
+    PARTITION_B_START_MB=$(expr ${PARTITION_B_START} / 1024 / 1024)
+    PARTITION_B_END_MB=$(expr ${PARTITION_B_END} / 1024 / 1024)
+    PARTITION_B_SIZE_MB=$(expr ${PARTITION_B_SIZE} / 1024 / 1024)
+
+    # Extract boot partition
+    dd if="${outimgname}" \
+        of="${WORKDIR}/boot_partition.vfat" \
+        bs=1M \
+        skip="${BOOT_PARTITION_START_MB}" \
+        count="${MENDER_BOOT_PART_SIZE_MB}"
+
+    # Create installer
+    cat > ${WORKDIR}/install-sundstrom.sh <<EOF
+#!/bin/bash
+
+#
+# Install Sundstrom OS
+#
+# Environment variable parameters:
+#
+#   - MMC_DISK: The MMC disk (SD card) to install from
+#   - EMMC_DISK: The eMMC disk to install to
+#   - DISK_LABEL: The label of the eMMC disk
+#   - SYSTEM_LABEL: The label of the read-only system partition
+#   - STORAGE_LABEL: The label of the read-write storage partition
+#   - SYSTEM_UUID: The UUID for the system partition
+#   - STORAGE_UUID: The UUID for the storage partition
+#
+# Disk geometry parameters:
+#
+#   - BOOT_PART_START
+#   - BOOT_PART_END
+#   - BOOT_PART_COUNT
+#   - SYSTEM_PART_START
+#   - SYSTEM_PART_END
+#   - SYSTEM_PART_COUNT
+#   - STORAGE_PART_START
+#
+
+# Enable strict shell mode
+set -o errexit
+set -o pipefail
+set -o nounset
+
+MMC_DISK=${MENDER_STORAGE_DEVICE}
+EMMC_DISK=${MENDER_INSTALL_DEVICE}
+DISK_LABEL=${ptable_type}
+
+BOOT_PARTITION_START=${BOOT_PARTITION_START}
+BOOT_PARTITION_END=${BOOT_PARTITION_END}
+PARTITION_A_START=${PARTITION_A_START}
+PARTITION_A_END=${PARTITION_A_END}
+PARTITION_B_START=${PARTITION_B_START}
+PARTITION_B_END=${PARTITION_B_END}
+DATA_PARTITION_START=${DATA_PARTITION_START}
+
+# Constant defining the size of 512-byte sectors
+SECTOR_SIZE=512
+
+BOOT_PART_START_SECTORS=\$(( \${BOOT_PARTITION_START} / \${SECTOR_SIZE} ))
+BOOT_PART_END_SECTORS=\$(( \${BOOT_PARTITION_END} / \${SECTOR_SIZE} ))
+PART_A_START_SECTORS=\$(( \${PARTITION_A_START} / \${SECTOR_SIZE} ))
+PART_A_END_SECTORS=\$(( \${PARTITION_A_END} / \${SECTOR_SIZE} ))
+PART_B_START_SECTORS=\$(( \${PARTITION_B_START} / \${SECTOR_SIZE} ))
+PART_B_END_SECTORS=\$(( \${PARTITION_B_END} / \${SECTOR_SIZE} ))
+DATA_PART_START_SECTORS=\$(( \${DATA_PARTITION_START} / \${SECTOR_SIZE} ))
+
+BOOT_PART_START_MB=\$(( \${BOOT_PARTITION_START} / (1024 * 1024) ))
+PART_A_START_MB=\$(( \${PARTITION_A_START} / (1024 * 1024) ))
+PART_B_START_MB=\$(( \${PARTITION_B_START} / (1024 * 1024) ))
+
+BOOT_PART_SIZE_MB=\$(( \${PART_A_START_MB} - \${BOOT_PART_START_MB} ))
+PART_A_SIZE_MB=\$(( \${PART_B_START_MB} - \${PART_A_START_MB} ))
+
+# Directly copy up to partition A
+#dd if=\${MMC_DISK} \\
+#  of=\${EMMC_DISK} \\
+#  bs=1M \\
+#  count=\${PART_A_START_MB} # TODO: Remove this comment
+
+# Wake the eMMC. Before adding this, writing the disk label would produce the
+# following kernel errors and break the install:
+#
+# [   38.274535] mmc1: cache flush error -110
+# [   38.279509] print_req_error: I/O error, dev mmcblk1, sector 0
+#
+dd if="\${EMMC_DISK}" of=/dev/null bs=512 count=1
+
+# Write a DISK_LABEL
+parted -s "\${EMMC_DISK}" mklabel "\${DISK_LABEL}"
+sync
+
+# Create boot partition 1
+parted -s "\${EMMC_DISK}" -a min unit s mkpart primary fat32 "\${BOOT_PART_START_SECTORS}" "\${BOOT_PART_END_SECTORS}"
+parted -s "\${EMMC_DISK}" set 1 boot on
+sync
+
+# Create system partition A
+parted -s "\${EMMC_DISK}" -a min unit s mkpart primary ext4 "\${PART_A_START_SECTORS}" "\${PART_A_END_SECTORS}"
+sync
+
+# Create storage partition B
+parted -s "\${EMMC_DISK}" -a min unit s mkpart primary ext4 "\${PART_B_START_SECTORS}" "\${PART_B_END_SECTORS}"
+sync
+
+# Create data partition
+parted -s "\${EMMC_DISK}" -a min unit s mkpart primary ext4 "\${DATA_PART_START_SECTORS}" 100%
+sync
+
+# Copy boot partition
+dd if=\${MMC_DISK} \\
+  of=\${EMMC_DISK} \\
+  bs=1M \\
+  skip=\${BOOT_PART_START_MB} \\
+  seek=\${BOOT_PART_START_MB} \\
+  count=\${BOOT_PART_SIZE_MB} # TODO: Remove this comment
+
+# Copy partition B twice
+for dest in \${PART_A_START_MB} \${PART_B_START_MB}; do
+  dd if=\${MMC_DISK} \\
+    of=\${EMMC_DISK} \\
+    bs=1M \\
+    skip=\${PART_B_START_MB} \\
+    seek=\${dest} \\
+    count=\${PART_A_SIZE_MB} # TODO: Remove this comment
+done
+EOF
+
+    # Copy installer to extracted boot partition
+    mcopy -i "${WORKDIR}/boot_partition.vfat" -s "${WORKDIR}/install-sundstrom.sh" ::/
+
+    # Merge boot partition back to disk image
+    dd if="${WORKDIR}/boot_partition.vfat" \
+        of="${outimgname}" \
+        bs=1M \
+        seek="${BOOT_PARTITION_START_MB}" \
+        count="${MENDER_BOOT_PART_SIZE_MB}" \
+        conv=notrunc
 }
 
 IMAGE_CMD_sdimg() {

@@ -23,6 +23,15 @@ def mender_linux_partition_base(dev):
         return "%sp" % dev
 MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_STORAGE_DEVICE}')}"
 
+# The embedded storage device that allows installing the OS.
+MENDER_INSTALL_DEVICE ??= "${MENDER_INSTALL_DEVICE_DEFAULT}"
+MENDER_INSTALL_DEVICE_DEFAULT = "/dev/mmcblk1"
+
+# The base name of the devices that hold individual partitions.
+# This is often MENDER_INSTALL_DEVICE + "p".
+MENDER_INSTALL_DEVICE_BASE ??= "${MENDER_INSTALL_DEVICE_BASE_DEFAULT}"
+MENDER_INSTALL_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_INSTALL_DEVICE}')}"
+
 # The partition number holding the boot partition.
 MENDER_BOOT_PART_NUMBER ??= "${MENDER_BOOT_PART_NUMBER_DEFAULT}"
 MENDER_BOOT_PART_NUMBER_DEFAULT = "1"
