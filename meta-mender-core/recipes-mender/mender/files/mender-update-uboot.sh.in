@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+# All sizes are in blocks of 512 bytes
+
+MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
+MENDER_INSTALL_DEVICE=@MENDER_INSTALL_DEVICE@
+
+FW_ENV_FILE=/data/u-boot/fw_env.config
+
+# TODO: Detect if running from eMMC
+sed -i "s#${MENDER_STORAGE_DEVICE}#${MENDER_INSTALL_DEVICE}#g" "${FW_ENV_FILE}"
