@@ -1,0 +1,502 @@
+From 4d157567c5290a3fbd4ef0ff99131b176c162fc8 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <garrett.brown@aclima.io>
+Date: Sun, 31 May 2020 16:30:00 -0700
+Subject: [PATCH 6/6] testing
+
+---
+ disk/part.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ env/env.c   |  5 +++++
+ env/fat.c   | 33 +++++++++++++++++++++++++++++++++
+ fs/fs.c     | 51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 134 insertions(+)
+
+diff --git a/disk/part.c b/disk/part.c
+index 8982ef3bae..579e744896 100644
+--- a/disk/part.c
++++ b/disk/part.c
+@@ -371,6 +371,9 @@ int part_get_info_whole_disk(struct blk_desc *dev_desc, disk_partition_t *info)
+ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
+ 			  struct blk_desc **dev_desc)
+ {
++  printf("blk_get_device_by_str(%s, %s)\n",
++      ifname != NULL ? ifname : "NULL",
++      dev_hwpart_str != NULL ? dev_hwpart_str : "NULL");
+ 	char *ep;
+ 	char *dup_str = NULL;
+ 	const char *dev_str, *hwpart_str;
+@@ -422,6 +425,7 @@ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
+ #endif
+ 
+ cleanup:
++  printf("blk_get_device_by_str - return \"%s\"\n", dup_str != NULL ? dup_str : "NULL");
+ 	free(dup_str);
+ 	return dev;
+ }
+@@ -432,6 +436,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 			     struct blk_desc **dev_desc,
+ 			     disk_partition_t *info, int allow_whole_dev)
+ {
++  printf("Here80\n");
+ 	int ret = -1;
+ 	const char *part_str;
+ 	char *dup_str = NULL;
+@@ -443,6 +448,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	disk_partition_t tmpinfo;
+ 
+ #ifdef CONFIG_SANDBOX
++	printf("Here81\n");
+ 	/*
+ 	 * Special-case a pseudo block device "hostfs", to allow access to the
+ 	 * host's own filesystem.
+@@ -488,17 +494,27 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	}
+ #endif
+ 
++	printf("Here81\n");
++
+ 	/* If no dev_part_str, use bootdevice environment variable */
+ 	if (!dev_part_str || !strlen(dev_part_str) ||
+ 	    !strcmp(dev_part_str, "-"))
++	{
++	  printf("Here82\n");
+ 		dev_part_str = env_get("bootdevice");
++	}
++
++	printf("Here83\n");
+ 
+ 	/* If still no dev_part_str, it's an error */
+ 	if (!dev_part_str) {
++	  printf("Here84\n");
+ 		printf("** No device specified **\n");
+ 		goto cleanup;
+ 	}
+ 
++	printf("Here85\n");
++
+ 	/* Separate device and partition ID specification */
+ 	part_str = strchr(dev_part_str, ':');
+ 	if (part_str) {
+@@ -513,7 +529,10 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	/* Look up the device */
+ 	dev = blk_get_device_by_str(ifname, dev_str, dev_desc);
+ 	if (dev < 0)
++	{
++	  printf("Here86\n");
+ 		goto cleanup;
++	}
+ 
+ 	/* Convert partition ID string to number */
+ 	if (!part_str || !*part_str) {
+@@ -521,6 +540,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	} else if (!strcmp(part_str, "auto")) {
+ 		part = PART_AUTO;
+ 	} else {
++	  printf("Here87\n");
+ 		/* Something specified -> use exactly that */
+ 		part = (int)simple_strtoul(part_str, &ep, 16);
+ 		/*
+@@ -534,6 +554,8 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 		}
+ 	}
+ 
++	printf("Here88\n");
++
+ 	/*
+ 	 * No partition table on device,
+ 	 * or user requested partition 0 (entire device).
+@@ -541,48 +563,64 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	if (((*dev_desc)->part_type == PART_TYPE_UNKNOWN) ||
+ 	    (part == 0)) {
+ 		if (!(*dev_desc)->lba) {
++		  printf("Here89\n");
+ 			printf("** Bad device size - %s %s **\n", ifname,
+ 			       dev_str);
+ 			goto cleanup;
+ 		}
+ 
++		printf("Here90\n");
++
+ 		/*
+ 		 * If user specified a partition ID other than 0,
+ 		 * or the calling command only accepts partitions,
+ 		 * it's an error.
+ 		 */
+ 		if ((part > 0) || (!allow_whole_dev)) {
++		  printf("Here91\n");
+ 			printf("** No partition table - %s %s **\n", ifname,
+ 			       dev_str);
+ 			goto cleanup;
+ 		}
+ 
++		printf("Here92\n");
++
+ 		(*dev_desc)->log2blksz = LOG2((*dev_desc)->blksz);
+ 
+ 		part_get_info_whole_disk(*dev_desc, info);
+ 
+ 		ret = 0;
++
++		printf("Here93\n");
+ 		goto cleanup;
+ 	}
+ 
++	printf("Here94\n");
++
+ 	/*
+ 	 * Now there's known to be a partition table,
+ 	 * not specifying a partition means to pick partition 1.
+ 	 */
+ 	if (part == PART_UNSPECIFIED)
++	{
++	  printf("Here95\n");
+ 		part = 1;
++	}
+ 
+ 	/*
+ 	 * If user didn't specify a partition number, or did specify something
+ 	 * other than "auto", use that partition number directly.
+ 	 */
+ 	if (part != PART_AUTO) {
++	  printf("Here96\n");
+ 		ret = part_get_info(*dev_desc, part, info);
+ 		if (ret) {
++		  printf("Here97\n");
+ 			printf("** Invalid partition %d **\n", part);
+ 			goto cleanup;
+ 		}
+ 	} else {
++	  printf("Here98\n");
+ 		/*
+ 		 * Find the first bootable partition.
+ 		 * If none are bootable, fall back to the first valid partition.
+@@ -621,12 +659,17 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 			if (p == MAX_SEARCH_PARTITIONS + 1)
+ 				*info = tmpinfo;
+ 		} else {
++		  printf("Here99\n");
+ 			printf("** No valid partitions found **\n");
+ 			ret = -1;
+ 			goto cleanup;
+ 		}
+ 	}
++
++	printf("Here100\n");
++
+ 	if (strncmp((char *)info->type, BOOT_PART_TYPE, sizeof(info->type)) != 0) {
++	  printf("Here101\n");
+ 		printf("** Invalid partition type \"%.32s\""
+ 			" (expect \"" BOOT_PART_TYPE "\")\n",
+ 			info->type);
+@@ -637,10 +680,12 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	(*dev_desc)->log2blksz = LOG2((*dev_desc)->blksz);
+ 
+ 	ret = part;
++	printf("Here102\n");
+ 	goto cleanup;
+ 
+ cleanup:
+ 	free(dup_str);
++	printf("Here103\n");
+ 	return ret;
+ }
+ 
+diff --git a/env/env.c b/env/env.c
+index 9237bb9c74..1aeb66ef07 100644
+--- a/env/env.c
++++ b/env/env.c
+@@ -203,9 +203,14 @@ int env_load(void)
+ 			printf("OK\n");
+ 			return 0;
+ 		} else if (ret == -ENOMSG) {
++		  printf("Here1\n");
+ 			/* Handle "bad CRC" case */
+ 			if (best_prio == -1)
++			{
++	          printf("Here2\n");
+ 				best_prio = prio;
++			}
++            printf("Here3\n");
+ 		} else {
+ 			debug("Failed (%d)\n", ret);
+ 		}
+diff --git a/env/fat.c b/env/fat.c
+index 1836556f36..06b567d30d 100644
+--- a/env/fat.c
++++ b/env/fat.c
+@@ -34,6 +34,7 @@
+ #ifdef CMD_SAVEENV
+ static int env_fat_save(void)
+ {
++  printf("Here70\n");
+ 	env_t __aligned(ARCH_DMA_MINALIGN) env_new;
+ 	struct blk_desc *dev_desc = NULL;
+ 	disk_partition_t info;
+@@ -43,16 +44,27 @@ static int env_fat_save(void)
+ 
+ 	err = env_export(&env_new);
+ 	if (err)
++	{
++	  printf("Here71\n");
+ 		return err;
++	}
++
++	printf("Here72\n");
+ 
+ 	part = blk_get_device_part_str(CONFIG_ENV_FAT_INTERFACE,
+ 					CONFIG_ENV_FAT_DEVICE_AND_PART,
+ 					&dev_desc, &info, 1);
+ 	if (part < 0)
++	{
++	  printf("Here73\n");
+ 		return 1;
++	}
++
++	printf("Here74\n");
+ 
+ 	dev = dev_desc->devnum;
+ 	if (fat_set_blk_dev(dev_desc, &info) != 0) {
++	  printf("Here75\n");
+ 		/*
+ 		 * This printf is embedded in the messages from env_save that
+ 		 * will calling it. The missing \n is intentional.
+@@ -62,9 +74,12 @@ static int env_fat_save(void)
+ 		return 1;
+ 	}
+ 
++	printf("Here76\n");
++
+ 	err = file_fat_write(CONFIG_ENV_FAT_FILE, (void *)&env_new, 0, sizeof(env_t),
+ 			     &size);
+ 	if (err == -1) {
++	  printf("Here77\n");
+ 		/*
+ 		 * This printf is embedded in the messages from env_save that
+ 		 * will calling it. The missing \n is intentional.
+@@ -74,6 +89,8 @@ static int env_fat_save(void)
+ 		return 1;
+ 	}
+ 
++	printf("Here78\n");
++
+ 	return 0;
+ }
+ #endif /* CMD_SAVEENV */
+@@ -81,6 +98,7 @@ static int env_fat_save(void)
+ #ifdef LOADENV
+ static int env_fat_load(void)
+ {
++  printf("Here50\n");
+ 	ALLOC_CACHE_ALIGN_BUFFER(char, buf, CONFIG_ENV_SIZE);
+ 	struct blk_desc *dev_desc = NULL;
+ 	disk_partition_t info;
+@@ -88,18 +106,26 @@ static int env_fat_load(void)
+ 	int err;
+ 
+ #ifdef CONFIG_MMC
++	printf("Here51\n");
+ 	if (!strcmp(CONFIG_ENV_FAT_INTERFACE, "mmc"))
+ 		mmc_initialize(NULL);
+ #endif
++	printf("Here52\n");
+ 
+ 	part = blk_get_device_part_str(CONFIG_ENV_FAT_INTERFACE,
+ 					CONFIG_ENV_FAT_DEVICE_AND_PART,
+ 					&dev_desc, &info, 1);
+ 	if (part < 0)
++	{
++	  printf("Here53\n");
+ 		goto err_env_relocate;
++	}
++
++	printf("Here54\n");
+ 
+ 	dev = dev_desc->devnum;
+ 	if (fat_set_blk_dev(dev_desc, &info) != 0) {
++	  printf("Here55\n");
+ 		/*
+ 		 * This printf is embedded in the messages from env_save that
+ 		 * will calling it. The missing \n is intentional.
+@@ -109,8 +135,11 @@ static int env_fat_load(void)
+ 		goto err_env_relocate;
+ 	}
+ 
++	printf("Here56\n");
++
+ 	err = file_fat_read(CONFIG_ENV_FAT_FILE, buf, CONFIG_ENV_SIZE);
+ 	if (err == -1) {
++	  printf("Here57\n");
+ 		/*
+ 		 * This printf is embedded in the messages from env_save that
+ 		 * will calling it. The missing \n is intentional.
+@@ -120,11 +149,15 @@ static int env_fat_load(void)
+ 		goto err_env_relocate;
+ 	}
+ 
++	printf("Here58\n");
++
+ 	return env_import(buf, 1);
+ 
+ err_env_relocate:
+ 	env_set_default(NULL, 0);
+ 
++	printf("Here59\n");
++
+ 	return -EIO;
+ }
+ #endif /* LOADENV */
+diff --git a/fs/fs.c b/fs/fs.c
+index 0c66d60477..8096e994ff 100644
+--- a/fs/fs.c
++++ b/fs/fs.c
+@@ -665,6 +665,7 @@ int do_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 		int fstype)
+ {
++  printf("Here4\n");
+ 	unsigned long addr;
+ 	const char *addr_str;
+ 	const char *filename;
+@@ -680,42 +681,72 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 	if (argc > 7)
+ 		return CMD_RET_USAGE;
+ 
++	  printf("Here5\n");
+ 	if (fs_set_blk_dev(argv[1], (argc >= 3) ? argv[2] : NULL, fstype))
+ 		return 1;
+ 
++	  printf("Here6\n");
+ 	if (argc >= 4) {
++	  printf("Here7\n");
+ 		addr = simple_strtoul(argv[3], &ep, 16);
+ 		if (ep == argv[3] || *ep != '\0')
++		{
++		  printf("Here8\n");
+ 			return CMD_RET_USAGE;
++		}
+ 	} else {
++	  printf("Here9\n");
+ 		addr_str = env_get("loadaddr");
+ 		if (addr_str != NULL)
++		{
++		  printf("Here10\n");
+ 			addr = simple_strtoul(addr_str, NULL, 16);
++		}
+ 		else
++		{
++		  printf("Here11\n");
+ 			addr = CONFIG_SYS_LOAD_ADDR;
++		}
+ 	}
++	printf("Here12\n");
+ 	if (argc >= 5) {
++	  printf("Here13\n");
+ 		filename = argv[4];
+ 	} else {
++	  printf("Here\n14");
+ 		filename = env_get("bootfile");
+ 		if (!filename) {
++		  printf("Here15\n");
+ 			puts("** No boot file defined **\n");
+ 			return 1;
+ 		}
++		printf("Here17\n");
+ 	}
++	printf("Here18\n");
+ 	if (argc >= 6)
++	{
++	  printf("Here19\n");
+ 		bytes = simple_strtoul(argv[5], NULL, 16);
++	}
+ 	else
++	{
++	  printf("Here20\n");
+ 		bytes = 0;
++	}
+ 	if (argc >= 7)
+ 		pos = simple_strtoul(argv[6], NULL, 16);
+ 	else
+ 		pos = 0;
+ 
++	printf("Here21\n");
++
+ #ifdef CONFIG_CMD_BOOTEFI
++
++	printf("Here22\n");
+ 	efi_set_bootdev(argv[1], (argc > 2) ? argv[2] : "",
+ 			(argc > 4) ? argv[4] : "");
+ #endif
++	printf("Here24\n");
+ 	time = get_timer(0);
+ 	ret = _fs_read(filename, addr, pos, bytes, 1, &len_read);
+ 	time = get_timer(time);
+@@ -723,6 +754,7 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 		return 1;
+ 
+ 	printf("%llu bytes read in %lu ms", len_read, time);
++	printf("Here25\n");
+ 	if (time > 0) {
+ 		puts(" (");
+ 		print_size(div_u64(len_read, time) * 1000, "/s");
+@@ -733,6 +765,7 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 	env_set_hex("fileaddr", addr);
+ 	env_set_hex("filesize", len_read);
+ 
++    printf("Here26\n");
+ 	return 0;
+ }
+ 
+@@ -765,6 +798,7 @@ int file_exists(const char *dev_type, const char *dev_part, const char *file,
+ int do_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 		int fstype)
+ {
++  printf("Here30\n");
+ 	unsigned long addr;
+ 	const char *filename;
+ 	loff_t bytes;
+@@ -777,7 +811,12 @@ int do_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 		return CMD_RET_USAGE;
+ 
+ 	if (fs_set_blk_dev(argv[1], argv[2], fstype))
++	{
++	  printf("Here31\n");
+ 		return 1;
++	}
++
++	printf("Here32\n");
+ 
+ 	addr = simple_strtoul(argv[3], NULL, 16);
+ 	filename = argv[4];
+@@ -787,11 +826,21 @@ int do_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 	else
+ 		pos = 0;
+ 
++	printf("Here33\n");
++
+ 	time = get_timer(0);
+ 	ret = fs_write(filename, addr, pos, bytes, &len);
+ 	time = get_timer(time);
++
++	printf("Here34\n");
++
+ 	if (ret < 0)
++	{
++	  printf("Here35\n");
+ 		return 1;
++	}
++
++	printf("Here36\n");
+ 
+ 	printf("%llu bytes written in %lu ms", len, time);
+ 	if (time > 0) {
+@@ -801,6 +850,8 @@ int do_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
+ 	}
+ 	puts("\n");
+ 
++	printf("Here37\n");
++
+ 	return 0;
+ }
+ 
+-- 
+2.20.1
+

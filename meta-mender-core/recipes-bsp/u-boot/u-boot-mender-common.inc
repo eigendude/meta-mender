@@ -26,7 +26,10 @@ SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE
                                                     '', \
                                                     d)}"
 
-SRC_URI_append_mender-install = " file://0005-Allow-installing-to-embedded-storage.patch"
+SRC_URI_append_mender-install = " \
+    file://0005-Allow-installing-to-embedded-storage.patch \
+    file://0006-testing.patch \
+"
 
 ################################################################################
 # Generic tasks.
