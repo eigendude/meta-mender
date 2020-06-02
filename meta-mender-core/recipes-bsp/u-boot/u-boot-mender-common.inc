@@ -318,6 +318,7 @@ MENDER_UBOOT_OLD_SRC = "${WORKDIR}/old-src"
 
 do_mender_uboot_auto_configure() {
     bbfatal "${UBOOT_MACHINE}"
+    exit 1
 
     if echo "${PN}" | fgrep "mender-auto-provided"; then
         # "mender-auto-provided" is a special recipe that has its sources
