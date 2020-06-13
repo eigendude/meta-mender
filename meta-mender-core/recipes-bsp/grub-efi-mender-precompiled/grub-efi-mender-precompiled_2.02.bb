@@ -17,25 +17,16 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 LICENSE = "GPL-3.0"
+SRC_URI = "file://COPYING;subdir=src"
 
 S = "${WORKDIR}/src"
 
-LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-3.0;md5=c79ff39f19dfec6d293b95dea7b07891"
+LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 
 PROVIDES = "grub-efi"
 RPROVIDES_${PN} = "grub-efi"
 
-URL_BASE ?= "https://d1b0l86ne08fsf.cloudfront.net/grub-mender-grubenv/grub-efi"
-GRUB_MENDER_GRUBENV_REV = "aa7e8f8c76c6aca6dca1820aaa42dc2cbf9762a1"
-
-SRC_URI_append_arm = " \
-    ${URL_BASE}/${PV}-grub-mender-grubenv-${GRUB_MENDER_GRUBENV_REV}/arm/grub-efi-bootarm.efi;md5sum=7ec4b336f333f45abec86f6193326226 \
-"
-
-GRUB_BUILDIN = "boot linux ext2 fat serial part_msdos part_gpt normal \
-                efi_gop iso9660 configfile search loadenv test \
-                cat echo gcry_sha256 halt hashsum sleep reboot regexp \
-                loadenv test"
+SRC_URI_append_arm = " file://grub-efi-bootarm.efi"
 
 COMPATIBLE_HOSTS = "arm"
 
