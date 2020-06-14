@@ -34,6 +34,8 @@ fi
 # Parted will refuse to resize the parition because it needs to re-write the
 # partition table and will refuse to do so unless there is a backup. This
 # ensures that GPT backup headers are written to the end of the disk.
-echo "w" | fdisk ${MENDER_STORAGE_DEVICE}
+# Parted may fail when it tries to re-read the modified partition table, so
+# ignore the error.
+echo "w" | fdisk ${MENDER_STORAGE_DEVICE} || :
 
 /usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart @MENDER_DATA_PART_NUMBER@ 100%
