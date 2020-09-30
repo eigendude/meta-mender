@@ -1,0 +1,26 @@
+From 004bdad5d82f59425d62f20d0b9c6de19ed23fa7 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Tue, 29 Sep 2020 22:56:59 -0700
+Subject: [PATCH] Authenticate with Pirate using AMN bootstrap token
+
+---
+ client/client_update.go | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/github.com/mendersoftware/mender/client/client_update.go b/src/github.com/mendersoftware/mender/client/client_update.go
+index 454de63..733f5c7 100644
+--- a/src/github.com/mendersoftware/mender/client/client_update.go
++++ b/src/github.com/mendersoftware/mender/client/client_update.go
+@@ -137,6 +137,9 @@ func (u *UpdateClient) FetchUpdate(api ApiRequester, url string, maxWait time.Du
+ 		return nil, -1, errors.Wrapf(err, "failed to create update fetch request")
+ 	}
+ 
++	// Authenticate with Pirate using AMN bootstrap token (TODO: change authentication)
++	req.Header.Add("Authorization", "bootstrap 44c43c0ccbf94f01b30036926d35c9f4")
++
+ 	r, err := api.Do(req)
+ 	if err != nil {
+ 		log.Error("Can not fetch update image: ", err)
+-- 
+2.17.1
+
