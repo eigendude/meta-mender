@@ -26,6 +26,3 @@ def mender_is_2_2_or_older(d):
         return False
 # This is needed for all 2.3 and later client versions, on warrior and older.
 SRC_URI_append_mender-systemd = "${@'' if mender_is_2_2_or_older(d) else ' file://0001-MEN-3277-Fix-check-update-and-send-inventory-options.patch'}"
-
-# This is needed to authenticate with Pirate
-SRC_URI_append = "file://0001-Authenticate-with-Pirate-using-AMN-bootstrap-token.patch"
