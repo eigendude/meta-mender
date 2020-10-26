@@ -20,6 +20,9 @@ set -o nounset
 #
 # See environment parameters below for additional parameters.
 #
+# Progress percentages are printed during install. The output format is XX%,
+# where XX is a number between 0 and 100, inclusive.
+#
 ################################################################################
 
 # The disk image
@@ -61,9 +64,6 @@ cat > "${WORKDIR}/${INSTALL_SCRIPT_NAME}" <<EOF
 # Enable strict shell mode
 set -o errexit
 set -o nounset
-
-# Import Mender utility functions
-source mender-utils
 
 ################################################################################
 #
@@ -124,9 +124,37 @@ DATA_PART_END_SECTORS=$(( ${DATA_PARTITION_END} / ${SECTOR_SIZE} ))
 
 ################################################################################
 #
+# Utility functions
+#
+################################################################################
+
+# Print the progress (in percent) to stdout formatted with a % sign
+function update_progress() {
+    progress="\$1"
+    echo "\${progress}%"
+}
+
+# Read the "root" parameter passed in the kernel command line
+function read_root_device() {
+    cmdline=\$(cat "/proc/cmdline")
+    for arg in \${cmdline}; do
+        # Set optarg to option parameter, and '' if no parameter was given
+        optarg=\$(expr "x\$arg" : 'x[^=]*=\(.*\)' || echo '')
+        case \$arg in
+            root=*)
+                echo \$optarg
+                ;;
+        esac
+    done
+}
+
+################################################################################
+#
 # Install procedure
 #
 ################################################################################
+
+update_progress 0
 
 # Verify that install disk is provided
 if [ -z "\${INSTALL_DEVICE}" ]; then
@@ -196,6 +224,8 @@ sync
 parted -s "\${INSTALL_DEVICE}" -a min unit s mkpart primary ext4 "\${DATA_PART_START_SECTORS}" "\${DATA_PART_END_SECTORS}"
 sync
 
+update_progress 10
+
 # Copy boot partition
 dd if="\${STORAGE_DEVICE}" \\
   of="\${INSTALL_DEVICE}" \\
@@ -203,6 +233,8 @@ dd if="\${STORAGE_DEVICE}" \\
   skip=\${BOOT_PART_START_MB} \\
   seek=\${BOOT_PART_START_MB} \\
   count=\${BOOT_PART_SIZE_MB}
+
+update_progress 30
 
 # Check boot partition
 #
@@ -238,6 +270,10 @@ for dest in \${PART_A_START_MB} \${PART_B_START_MB}; do
       skip=\${INACTIVE_PART_START} \\
       seek=\${dest} \\
       count=\${ROOT_PART_SIZE_MB}
+
+    if [ "\${dest}" -eq "\${PART_A_START_MB}" ]; then
+        update_progress 60
+    fi
 done
 
 # Check A/B filesystems
@@ -256,6 +292,8 @@ cp -r "\${DATA_MOUNT}"/* "\${INSTALL_DATA_MOUNT}"
 umount "\${INSTALL_DATA_MOUNT}"
 rm -rf "\${INSTALL_DATA_MOUNT}"
 sync
+
+update_progress 100
 EOF
 
 ################################################################################
