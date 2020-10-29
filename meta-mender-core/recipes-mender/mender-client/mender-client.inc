@@ -3,9 +3,6 @@ HOMEPAGE = "https://mender.io"
 
 RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted"
 
-# dosfstools is needed for fsck.fat
-RDEPENDS_${PN}_append_mender-emmc-install_mender-systemd = " sed dosfstools"
-
 def cert_location_if_server_crt_in(src_uri, d):
     for src in src_uri.split():
         if src.endswith("/server.crt"):
@@ -69,13 +66,6 @@ SRC_URI_append_mender-growfs-data_mender-systemd = " \
     file://mender-systemd-growfs-data.service \
 "
 
-SRC_URI_append_mender-emmc-install_mender-systemd = " \
-    file://mender-update-config.sh.in \
-    file://mender-update-config.service \
-    file://mender-update-fstab.sh.in \
-    file://mender-utils.sh \
-"
-
 FILES_${PN}_append_mender-image_mender-systemd = " \
     ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service \
@@ -93,14 +83,6 @@ FILES_${PN}_append_mender-persist-systemd-machine-id = " \
     ${systemd_unitdir}/system/mender-client-systemd-machine-id.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-client-systemd-machine-id.service \
     ${bindir}/mender-client-set-systemd-machine-id.sh \
-"
-
-FILES_${PN}_append_mender-emmc-install_mender-systemd = " \
-    ${bindir}/mender-update-config \
-    ${bindir}/mender-update-fstab \
-    ${bindir}/mender-utils \
-    ${systemd_unitdir}/system/mender-update-config.service \
-    ${systemd_unitdir}/system/multi-user.target.wants/mender-update-config.service \
 "
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
@@ -298,10 +280,6 @@ do_install() {
     install -d ${D}${sysconfdir}/udev/mount.blacklist.d
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-    if [ -n "${MENDER_INSTALL_DEVICE}" ]; then
-        echo ${MENDER_INSTALL_ROOTFS_PART_A} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-        echo ${MENDER_INSTALL_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-    fi
 }
 
 do_install_append_mender-image_mender-systemd() {
@@ -312,9 +290,6 @@ do_install_append_mender-image_mender-systemd() {
 
 do_install_append_mender-growfs-data_mender-systemd() {
     sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-        ${WORKDIR}/mender-client-resize-data-part.sh.in
-
-    sed -i "s#@MENDER_INSTALL_DEVICE@#${MENDER_INSTALL_DEVICE}#g" \
         ${WORKDIR}/mender-client-resize-data-part.sh.in
 
     sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
@@ -341,29 +316,4 @@ do_install_append_mender-persist-systemd-machine-id() {
     ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
     install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/
-}
-
-do_install_append_mender-emmc-install_mender-systemd() {
-    sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-        ${WORKDIR}/mender-update-config.sh.in
-    sed -i "s#@MENDER_INSTALL_DEVICE@#${MENDER_INSTALL_DEVICE}#g" \
-        ${WORKDIR}/mender-update-config.sh.in
-    install -m 0755 ${WORKDIR}/mender-update-config.sh.in \
-        ${D}/${bindir}/mender-update-config
-
-    sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-        ${WORKDIR}/mender-update-fstab.sh.in
-    sed -i "s#@MENDER_INSTALL_DEVICE@#${MENDER_INSTALL_DEVICE}#g" \
-        ${WORKDIR}/mender-update-fstab.sh.in
-    install -m 0755 ${WORKDIR}/mender-update-fstab.sh.in \
-        ${D}/${bindir}/mender-update-fstab
-
-    install -m 0755 ${WORKDIR}/mender-utils.sh \
-        ${D}/${bindir}/mender-utils
-
-    install -d ${D}/${systemd_unitdir}/system
-    install -m 644 ${WORKDIR}/mender-update-config.service ${D}/${systemd_unitdir}/system/
-
-    install -d ${D}${systemd_unitdir}/system/multi-user.target.wants/
-    ln -sf ../mender-update-config.service ${D}${systemd_unitdir}/system/multi-user.target.wants/
 }
