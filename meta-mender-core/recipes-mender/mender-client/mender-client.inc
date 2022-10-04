@@ -29,7 +29,6 @@ inherit go
 inherit pkgconfig
 inherit systemd
 
-SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
 FILES_${PN} += "\
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
@@ -47,7 +46,6 @@ FILES_${PN} += "\
     ${datadir}/mender/modules/v3/single-file \
     ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
-    ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
     /data/mender/device_type \
     /data/mender/mender.conf \
 "
@@ -254,7 +252,6 @@ do_install() {
         install-bin \
         install-identity-scripts \
         install-inventory-scripts \
-        install-systemd \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
     #install our prepared configuration
@@ -305,6 +302,7 @@ do_install() {
 }
 
 do_install_append_mender-image_mender-systemd() {
+    install -d ${D}/${systemd_unitdir}/system
     install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service
