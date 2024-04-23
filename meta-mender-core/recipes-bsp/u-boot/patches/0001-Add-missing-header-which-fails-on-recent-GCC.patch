@@ -1,14 +1,16 @@
-From d98fa92ea27a6a421310ebe1676c07d34c0c9bc8 Mon Sep 17 00:00:00 2001
+From c32f7242a4b6b792423ca4712295764aa81d037b Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@mender.io>
 Date: Mon, 15 Feb 2016 15:57:32 +0100
 Subject: [PATCH 1/4] Add missing header which fails on recent GCC.
+
+Upstream-Status: Pending
 
 ---
  tools/env/fw_env.c | 1 +
  1 file changed, 1 insertion(+)
 
 diff --git a/tools/env/fw_env.c b/tools/env/fw_env.c
-index 2a61a5d6f0..b0bce1b5ac 100644
+index c9a8774ace..64fd2380a4 100644
 --- a/tools/env/fw_env.c
 +++ b/tools/env/fw_env.c
 @@ -20,6 +20,7 @@
@@ -20,5 +22,5 @@ index 2a61a5d6f0..b0bce1b5ac 100644
  #include <string.h>
  #include <sys/types.h>
 -- 
-2.17.1
+2.34.1
 
