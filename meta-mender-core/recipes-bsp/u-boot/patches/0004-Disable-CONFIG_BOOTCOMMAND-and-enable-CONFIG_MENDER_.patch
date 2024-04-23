@@ -1,8 +1,10 @@
-From dd20c3e4fcc11d7a5fa44000090609b182355c96 Mon Sep 17 00:00:00 2001
+From 09dd4bf5536917890a77ae8c03dec61a3a7f2f77 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@northern.tech>
 Date: Mon, 28 Aug 2017 18:12:37 +0200
 Subject: [PATCH 4/4] Disable CONFIG_BOOTCOMMAND and enable
  CONFIG_MENDER_BOOTCOMMAND.
+
+Upstream-Status: Pending
 
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 ---
@@ -10,10 +12,10 @@ Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/env_default.h b/include/env_default.h
-index a2ccb4b7c9..4a47e096a3 100644
+index 7db7be7b6a..86c7c83865 100644
 --- a/include/env_default.h
 +++ b/include/env_default.h
-@@ -37,8 +37,8 @@ const uchar default_environment[] = {
+@@ -39,8 +39,8 @@ const char default_environment[] = {
  #ifdef	CONFIG_USE_BOOTARGS
  	"bootargs="	CONFIG_BOOTARGS			"\0"
  #endif
@@ -22,8 +24,8 @@ index a2ccb4b7c9..4a47e096a3 100644
 +#ifdef	CONFIG_MENDER_BOOTCOMMAND
 +	"bootcmd="	CONFIG_MENDER_BOOTCOMMAND	"\0"
  #endif
- #ifdef	CONFIG_RAMBOOTCOMMAND
- 	"ramboot="	CONFIG_RAMBOOTCOMMAND		"\0"
+ #if defined(CONFIG_BOOTDELAY)
+ 	"bootdelay="	__stringify(CONFIG_BOOTDELAY)	"\0"
 -- 
-2.17.1
+2.34.1
 
