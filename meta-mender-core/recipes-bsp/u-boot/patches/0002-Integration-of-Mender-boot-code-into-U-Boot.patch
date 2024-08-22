@@ -39,7 +39,7 @@ index 0ade91642a..c653f1afaa 100644
 --- a/scripts/Makefile.autoconf
 +++ b/scripts/Makefile.autoconf
 @@ -116,7 +116,8 @@ define filechk_config_h
- 	echo \#include \<configs/$(CONFIG_SYS_CONFIG_NAME).h\>;		\
+ 	$(if $(CONFIG_SYS_CONFIG_NAME),echo \#include \<configs/$(CONFIG_SYS_CONFIG_NAME).h\> ;) \
  	echo \#include \<asm/config.h\>;				\
  	echo \#include \<linux/kconfig.h\>;				\
 -	echo \#include \<config_fallbacks.h\>;)
